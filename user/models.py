@@ -19,6 +19,7 @@ class User(models.Model):
     register_time = models.DateTimeField('注册时间', auto_now_add=True)
     avatar = models.ImageField('头像', upload_to='avatars/', blank=True, null=True)  # 新增头像字段
     signature = models.CharField('个性签名', max_length=255, blank=True)
+    telephone = models.CharField('手机号', max_length=11, blank=True,default='12345678910')
 
     class Meta:
         verbose_name = 'user'
