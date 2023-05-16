@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 
-
 class User(models.Model):
     ROLE_CHOICES = [
         ('visitor', '访客'),
@@ -11,6 +10,7 @@ class User(models.Model):
     ]
     id = models.IntegerField(blank=True, null=True)
     username = models.CharField('用户名', max_length=255, unique=True, db_index=True, primary_key=True, blank=False)
+    password = models.CharField('密码', max_length=255, blank=False,default='123456')
     email = models.EmailField('邮箱', blank=True)
     nickname = models.CharField('昵称', max_length=255, blank=True)
     role = models.CharField('角色', max_length=20, choices=ROLE_CHOICES, default='visitor')
