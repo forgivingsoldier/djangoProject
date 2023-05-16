@@ -46,3 +46,20 @@ def login(request):
     else:
         result = {'code': 10200, 'error': '请求方式错误'}
         return JsonResponse(result)
+
+def info(request, username):
+    if request.method == 'GET':
+        try:
+            user = User.objects.get(username=username)
+        except Exception as e:
+            result = {'code': 10201, 'error': '用户不存在'}
+            return JsonResponse(result)
+
+        result = {'code': 200, 'username': username, 'data': {'nickname': user.nickname, 'email': user.email,
+                                                               'role': user.role, 'experience': user.experience,
+                                                               'level': user.level,'avatar': str(user.avatar), 'signature': user.signature}}
+        return JsonResponse(result)
+
+    else:
+        result = {'code': 10200, 'error': '请求方式错误'}
+        return JsonResponse(result)
