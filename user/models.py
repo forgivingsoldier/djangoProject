@@ -22,25 +22,25 @@ class User(models.Model):
     telephone = models.CharField('手机号', max_length=11, blank=True,default='12345678910')
 
     class Meta:
+        db_table = 'user'
         verbose_name = 'user'
         verbose_name_plural = 'users'
 
 class Resource(models.Model):
-    CATEGORY_CHOICES = [
-        ('subject', '学科'),
-        ('type', '资源类型'),
-    ]
+
     name = models.CharField('资源名称', max_length=255)
     author = models.CharField('作者', max_length=255)
     description = models.TextField('资源描述')
-    category = models.CharField('资源分类', max_length=20, choices=CATEGORY_CHOICES)
+    filetype = models.CharField('资源文件分类', max_length=255,default ='其他' )
+    subject = models.CharField('资源学科', max_length=255,default ='其他' )
     file = models.FileField('文件', upload_to='resources/')  # 新增文件字段
     file_url = models.URLField('文件链接')
     download_count = models.IntegerField('下载次数', default=0)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
     upload_time = models.DateTimeField('上传时间', default=timezone.now)
 
     class Meta:
+        db_table = 'resource'
         verbose_name = 'resource'
         verbose_name_plural = 'resources'
 
@@ -48,22 +48,24 @@ class Resource(models.Model):
 class Post(models.Model):
     title = models.CharField('帖子标题', max_length=255)
     content = models.TextField('帖子内容')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
-    post_time = models.DateTimeField('发布时间', default=timezone.now)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
+    update_time = models.DateTimeField('更新时间', auto_now=True)
     like_count = models.IntegerField('点赞次数', default=0)
     comment_count = models.IntegerField('评论次数', default=0)
 
     class Meta:
+        db_table = 'post'
         verbose_name = 'post'
         verbose_name_plural = 'posts'
-
+2
 class Comment(models.Model):
     content = models.TextField('评论内容')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, blank=True, null=True)
     comment_time = models.DateTimeField('评论时间', default=timezone.now)
 
     class Meta:
+        db_table = 'comment'
         verbose_name = 'comment'
         verbose_name_plural = 'comments'
 
@@ -74,10 +76,11 @@ class Log(models.Model):
         ('comment', '评论'),
         ('like', '点赞'),
     ]
-    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
     action = models.CharField('动作', max_length=20, choices=ACTION_CHOICES)
     timestamp = models.DateTimeField('时间戳', auto_now_add=True)
 
     class Meta:
+        db_table = 'log'
         verbose_name = 'log'
         verbose_name_plural = 'logs'
