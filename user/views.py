@@ -147,6 +147,9 @@ def logout(request,username):
 def delete_account(request,username):
     if request.method == 'DELETE':
         user = request.myuser
+        if user.username != username:
+            result = {'code': 10208, 'error': '无权限'}
+            return JsonResponse(result)
         user.delete()
         return JsonResponse({'code': 200})
 
