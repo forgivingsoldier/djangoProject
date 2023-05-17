@@ -17,7 +17,7 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
-
+from visitor import views as visitor_views
 from djangoProject import views
 
 urlpatterns = [
@@ -25,6 +25,7 @@ urlpatterns = [
     re_path('user/', include('user.urls')),
     re_path('post/', include('post.urls')),
     re_path('source/', include('source.urls')),
+
 ]
 
 urlpatterns += [
