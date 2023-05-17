@@ -70,18 +70,21 @@ class Comment(models.Model):
         verbose_name = 'comment'
         verbose_name_plural = 'comments'
 
-class Log(models.Model):
-    ACTION_CHOICES = [
-        ('login', '登录'),
-        ('post', '发帖'),
-        ('comment', '评论'),
-        ('like', '点赞'),
-    ]
+class ExceptionLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
-    action = models.CharField('动作', max_length=20, choices=ACTION_CHOICES)
+    exception_action = models.TextField("异常操作")
     timestamp = models.DateTimeField('时间戳', auto_now_add=True)
 
     class Meta:
-        db_table = 'log'
+        db_table = 'exception_log'
+        verbose_name = 'log'
+        verbose_name_plural = 'logs'
+class FlavorLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
+    flavor_title= models.TextField("倾向标题")
+    timestamp = models.DateTimeField('时间戳', auto_now_add=True)
+
+    class Meta:
+        db_table = 'flavor_log'
         verbose_name = 'log'
         verbose_name_plural = 'logs'

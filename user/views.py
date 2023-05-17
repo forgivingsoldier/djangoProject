@@ -15,7 +15,7 @@ from tools.user_dec import check_token
 from user.models import User;
 from django.conf import settings
 
-
+#登录
 @csrf_exempt
 def login(request):
     if request.method == 'POST':
@@ -30,7 +30,8 @@ def login(request):
         except Exception as e:
             result = {'code': 10201, 'error': '用户不存在'}
             return JsonResponse(result)
-
+        user.experience+=2
+        user.save()
         p_m = hashlib.md5();
         p_m.update(password.encode());
         if(user.password != p_m.hexdigest()):
@@ -49,6 +50,7 @@ def login(request):
         result = {'code': 10200, 'error': '请求方式错误'}
         return JsonResponse(result)
 
+#获取用户信息
 def info(request, username):
     if request.method == 'GET':
         try:
@@ -66,6 +68,7 @@ def info(request, username):
         result = {'code': 10200, 'error': '请求方式错误'}
         return JsonResponse(result)
 
+#修改用户信息
 @csrf_exempt
 @check_token
 def change_info(request,username):
@@ -87,6 +90,7 @@ def change_info(request,username):
         result = {'code': 10200, 'error': '请求方式错误'}
         return JsonResponse(result)
 
+#修改用户头像
 @csrf_exempt
 @check_token
 def change_avatar(request,username):
@@ -100,6 +104,7 @@ def change_avatar(request,username):
         result = {'code': 10200, 'error': '请求方式错误'}
         return JsonResponse(result)
 
+#修改密码
 @csrf_exempt
 @check_token
 def change_password(request,username):

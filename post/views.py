@@ -18,6 +18,9 @@ class postViews(View):
     def post(self, request, authorName):
 
         author=request.myuser
+        #经验值增加
+        author.experience+=5
+        author.save()
         json_str = request.body.decode()
         json_obj = json.loads(json_str)
         title = json_obj['title']
@@ -30,6 +33,7 @@ class postViews(View):
     def delete(self,request,authorName):
         author=request.myuser
         if author.username != authorName:
+
             return JsonResponse({'code': 10206, 'error': '你没有权限删除别人的帖子,你的行为将被记录'})
         json_str = request.body.decode()
         json_obj = json.loads(json_str)
@@ -258,6 +262,9 @@ class postViews(View):
             post = Post.objects.get(title=title, user=authorName)
         except Exception as e:
             return JsonResponse({'code': 10205, 'error': '帖子不存在'})
+        #作者经验值加3
+        author=User.objects.get(username=authorName)
+        author.exp+=3
         post.like_count += 1
         post.save()
         return JsonResponse({'code': 200})
