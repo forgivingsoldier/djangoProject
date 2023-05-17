@@ -10,6 +10,8 @@ from django.http import JsonResponse
 import json
 import jwt
 from django.conf import settings
+
+from tools.user_dec import check_token
 from user.models import User;
 from django.conf import settings
 
@@ -40,7 +42,7 @@ def login(request):
         now_time = time.time()
         payload = {'username': username, 'exp': int(now_time + 60 * 60 * 24)}
         token = jwt.encode(payload, key, algorithm='HS256')
-        result = {'code': 200, 'username': username, 'data': {'token': token.decode()}}
+        result = {'code': 200, 'username': username, 'data': {'token': token}}
         return JsonResponse(result)
 
     else:
@@ -63,3 +65,67 @@ def info(request, username):
     else:
         result = {'code': 10200, 'error': '请求方式错误'}
         return JsonResponse(result)
+
+@csrf_exempt
+@check_token
+def change_info(request,username):
+    if request.method == 'PUT':
+        json_str = request.body.decode()
+        data = json.loads(json_str)
+
+        user = request.myuser
+
+        user.nickname = data['nickname']
+        user.email = data['email']
+        user.signature = data['signature']
+
+
+        user.save()
+        return JsonResponse({'code': 200})
+
+    else:
+        result = {'code': 10200, 'error': '请求方式错误'}
+        return JsonResponse(result)
+
+@csrf_exempt
+@check_token
+def change_avatar(request,username):
+    if request.method == 'POST':
+        user = request.myuser
+        user.avatar = request.FILES['avatar']
+        user.save()
+        return JsonResponse({'code': 200})
+
+    else:
+        result = {'code': 10200, 'error': '请求方式错误'}
+        return JsonResponse(result)
+
+@csrf_exempt
+@check_token
+def change_password(request,username):
+    if request.method == 'PUT':
+        json_str = request.body.decode()
+        data = json.loads(json_str)
+
+        user = request.myuser
+
+        p_m = hashlib.md5();
+        p_m.update(data['old_password'].encode());
+        if(user.password != p_m.hexdigest()):
+            result = {'code': 10202, 'error': '输入密码错误'}
+            return JsonResponse(result)
+
+        p_m = hashlib.md5();
+        p_m.update(data['new_password'].encode());
+        user.password = p_m.hexdigest()
+
+        user.save()
+        return JsonResponse({'code': 200})
+
+    else:
+        result = {'code': 10200, 'error': '请求方式错误'}
+        return JsonResponse(result)
+
+# 忘记密码后通过验证发送给手机的验证码修改密码
+# @csrf_exempt
+# def change_password_by_phone(request,username):
