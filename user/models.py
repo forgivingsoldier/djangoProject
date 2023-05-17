@@ -52,6 +52,7 @@ class Post(models.Model):
     update_time = models.DateTimeField('更新时间', auto_now=True)
     like_count = models.IntegerField('点赞次数', default=0)
     comment_count = models.IntegerField('评论次数', default=0)
+    require_level = models.IntegerField('要求等级', default=1)
 
     class Meta:
         db_table = 'post'

@@ -129,3 +129,27 @@ def change_password(request,username):
 # 忘记密码后通过验证发送给手机的验证码修改密码
 # @csrf_exempt
 # def change_password_by_phone(request,username):
+
+# 退出登录
+@csrf_exempt
+@check_token
+def logout(request,username):
+    if request.method == 'POST':
+        result = {'code': 200}
+        return JsonResponse(result)
+
+    else:
+        result = {'code': 10200, 'error': '请求方式错误'}
+        return JsonResponse(result)
+# 注销账号
+@csrf_exempt
+@check_token
+def delete_account(request,username):
+    if request.method == 'DELETE':
+        user = request.myuser
+        user.delete()
+        return JsonResponse({'code': 200})
+
+    else:
+        result = {'code': 10200, 'error': '请求方式错误'}
+        return JsonResponse(result)

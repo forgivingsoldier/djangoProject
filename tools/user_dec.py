@@ -28,3 +28,16 @@ def check_token(func):
         request.myuser = user
         return func(request, *args, **kwargs)
     return wrapper
+
+
+
+def get_username_by_request(request):
+    token = request.META.get('HTTP_AUTHORIZATION')
+    if not token:
+        return None
+    try:
+        res = jwt.decode(token, settings.JWT_TOKEN_KEY, algorithms='HS256')
+    except Exception as e:
+        return None
+    username = res['username']
+    return username
