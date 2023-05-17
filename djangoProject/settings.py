@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-=y2y2rk!p#fnh$xl6fd9k39qo2p-6c7_8zc701ug(j@e1pd%g)
 DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'desktop-f3us72c']
-
+APPEND_SLASH = False
 # Application definition
 
 INSTALLED_APPS = [
@@ -36,14 +36,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'user'
+    'user',
+    'visitor'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
