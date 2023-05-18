@@ -20,11 +20,14 @@ class User(models.Model):
     avatar = models.ImageField('头像', upload_to='avatars/', blank=True, null=True)  # 新增头像字段
     signature = models.CharField('个性签名', max_length=255, blank=True)
     telephone = models.CharField('手机号', max_length=11, blank=True,default='12345678910')
+    last_login = models.DateTimeField('最后登录时间', default=timezone.now)
+    is_waring = models.BooleanField('是否被警告', default=False)
 
     class Meta:
         db_table = 'user'
         verbose_name = 'user'
         verbose_name_plural = 'users'
+
 
 class Resource(models.Model):
 
@@ -36,6 +39,8 @@ class Resource(models.Model):
     file = models.FileField('文件', upload_to='resources/')  # 新增文件字段
     file_url = models.URLField('文件链接')
     download_count = models.IntegerField('下载次数', default=0)
+    # 举报次数
+    report_count = models.IntegerField('举报次数', default=0)
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
     upload_time = models.DateTimeField('上传时间', default=timezone.now)
 
@@ -51,6 +56,7 @@ class Post(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
     update_time = models.DateTimeField('更新时间', auto_now=True)
     like_count = models.IntegerField('点赞次数', default=0)
+    report_count = models.IntegerField('举报次数', default=0)
     comment_count = models.IntegerField('评论次数', default=0)
     require_level = models.IntegerField('要求等级', default=1)
 
@@ -58,9 +64,11 @@ class Post(models.Model):
         db_table = 'post'
         verbose_name = 'post'
         verbose_name_plural = 'posts'
-2
+
 class Comment(models.Model):
     content = models.TextField('评论内容')
+    like_count = models.IntegerField('点赞次数', default=0)
+    report_count = models.IntegerField('举报次数', default=0)
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, blank=True, null=True)
     comment_time = models.DateTimeField('评论时间', default=timezone.now)
@@ -70,30 +78,43 @@ class Comment(models.Model):
         verbose_name = 'comment'
         verbose_name_plural = 'comments'
 
-class ExceptionLog(models.Model):
+class ExceptionUser(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
     exception_action = models.TextField("异常操作")
     timestamp = models.DateTimeField('时间戳', auto_now_add=True)
 
     class Meta:
         db_table = 'exception_log'
-        verbose_name = 'log'
-        verbose_name_plural = 'logs'
+
+class ExceptionResource(models.Model):
+    author =models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
+    source_id = models.ForeignKey(Resource, on_delete=models.CASCADE, blank=True, null=True,db_column='source_id')
+    exception_reason = models.TextField("异常原因",default='无')
+
+    class Meta:
+        db_table = 'exception_resource'
+
+class ExceptionPost(models.Model):
+    author =models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
+    post_id = models.ForeignKey(Post, on_delete=models.CASCADE, blank=True, null=True,db_column='post_id')
+    exception_reason = models.TextField("异常原因",default='无')
+
+    class Meta:
+        db_table = 'exception_post'
 class FlavorPost(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
-    flavor_title= models.TextField("倾向标题")
+    post_id = models.ForeignKey(Post, on_delete=models.CASCADE, blank=True, null=True,db_column='post_id')
+    flavor_title= models.TextField("倾向标题",default='无')
     timestamp = models.DateTimeField('时间戳', auto_now_add=True)
 
     class Meta:
         db_table = 'flavor_post'
-        verbose_name = 'log'
-        verbose_name_plural = 'logs'
+
 class FlavorResource(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
-    flavor_title= models.TextField("倾向标题")
+    resource_id = models.ForeignKey(Resource, on_delete=models.CASCADE, blank=True, null=True,db_column='resource_id')
+    flavor_title= models.TextField("倾向标题",default='无')
     timestamp = models.DateTimeField('时间戳', auto_now_add=True)
 
     class Meta:
         db_table = 'flavor_resource'
-        verbose_name = 'log'
-        verbose_name_plural = 'logs'

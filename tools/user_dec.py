@@ -1,10 +1,11 @@
 import jwt
 from django.conf import settings
 from django.http import JsonResponse
+from django.templatetags.static import static
 
 from user.models import User
 
-
+online_user_num = 0
 def check_token(func):
     def wrapper(request, *args, **kwargs):
         # 获取token
