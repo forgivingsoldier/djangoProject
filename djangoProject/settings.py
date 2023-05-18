@@ -134,3 +134,21 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
 JWT_TOKEN_KEY = 'forgiving'
+
+CACHES = {
+    "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379/1",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                #"PASSWORD": "123456"
+            }
+        }
+}
+
+#方式1 cache.set/get  具备序列化和反序列化
+#方式2
+#from django_redis import get_redis_connection
+#r = get_redis_connection()
+#r.redis命令
+#方式3 装饰器 -> cache_page(60)
