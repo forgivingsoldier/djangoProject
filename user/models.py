@@ -79,12 +79,21 @@ class ExceptionLog(models.Model):
         db_table = 'exception_log'
         verbose_name = 'log'
         verbose_name_plural = 'logs'
-class FlavorLog(models.Model):
+class FlavorPost(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
     flavor_title= models.TextField("倾向标题")
     timestamp = models.DateTimeField('时间戳', auto_now_add=True)
 
     class Meta:
-        db_table = 'flavor_log'
+        db_table = 'flavor_post'
+        verbose_name = 'log'
+        verbose_name_plural = 'logs'
+class FlavorResource(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
+    flavor_title= models.TextField("倾向标题")
+    timestamp = models.DateTimeField('时间戳', auto_now_add=True)
+
+    class Meta:
+        db_table = 'flavor_resource'
         verbose_name = 'log'
         verbose_name_plural = 'logs'
