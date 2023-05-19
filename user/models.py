@@ -65,16 +65,17 @@ class Post(models.Model):
         verbose_name = 'post'
         verbose_name_plural = 'posts'
 
-class Comment(models.Model):
+class Comment_for_post(models.Model):
     content = models.TextField('评论内容')
     like_count = models.IntegerField('点赞次数', default=0)
     report_count = models.IntegerField('举报次数', default=0)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, blank=True, null=True)
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username', related_name='comments')
+    post_id = models.ForeignKey(Post, on_delete=models.CASCADE, blank=True, null=True, related_name='comments')
+    parent_comment = models.ForeignKey('self', null=True, blank=True, related_name='replies', on_delete=models.CASCADE)
     comment_time = models.DateTimeField('评论时间', default=timezone.now)
 
     class Meta:
-        db_table = 'comment'
+        db_table = 'comment_for_post'
         verbose_name = 'comment'
         verbose_name_plural = 'comments'
 

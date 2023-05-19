@@ -1,9 +1,10 @@
 import hashlib
 import time
+from random import random
 
 from django.core.cache import cache
 from django.shortcuts import render
-
+from tools.sms import YunTongXin
 # Create your views here.
 from django.contrib.auth import authenticate, user_logged_in, user_logged_out
 from django.views.decorators.csrf import csrf_exempt
@@ -32,13 +33,13 @@ def login(request):
             return JsonResponse(result)
         user.experience+=2
         user.save()
-        '''''
+
         p_m = hashlib.md5();
         p_m.update(password.encode());
         if(user.password != p_m.hexdigest()):
             result = {'code': 10202, 'error': '输入密码错误'}
             return JsonResponse(result)
-        '''''
+
         # 用户验证成功，生成JWT令牌
         key=settings.JWT_TOKEN_KEY
         now_time = time.time()
@@ -135,7 +136,69 @@ def change_password(request,username):
 
 # 忘记密码后通过验证发送给手机的验证码修改密码
 # @csrf_exempt
-# def change_password_by_phone(request,username):
+def change_password_by_phone(request,username):
+    if request.method == 'POST':
+        json_str = request.body.decode()
+        data = json.loads(json_str)
+        telephone = data['telephone']
+        sms_num = data['sms_num']
+        user = request.myuser
+
+        old_code = cache.get('sms_%s' % (telephone))
+        if not old_code:
+            result = {'code': '10110', 'error': 'The code is wrong'}
+            return JsonResponse(result)
+        if int(sms_num) != old_code:
+            result = {'code': '10111', 'error': 'The code is wrong'}
+            return JsonResponse(result)
+
+        p_m = hashlib.md5();
+        p_m.update(data['password'].encode());
+        user.password = p_m.hexdigest()
+
+        user.save()
+        return JsonResponse({'code': 200})
+
+    else:
+        result = {'code': 10200, 'error': '请求方式错误'}
+        return JsonResponse(result)
+
+
+def sms_view(request):
+    if request.method != 'POST':
+        result = {'code':10108, 'error':'Please use POST'}
+        return JsonResponse(result)
+    json_str = request.body
+    json_obj = json.loads(json_str)
+    telephone = json_obj['telephone']
+    # 生成随机码
+    code = random.randint(1000, 9999)
+    print('telephone', telephone, ' code', code)
+    # 存储随机码 django-redis sudo pip3 install django-redis
+    cache_key = 'sms_%s' % (telephone)
+    # 检查是否已经有发过的且未过期的验证码
+    old_code = cache.get(cache_key)
+    if old_code:
+        return JsonResponse({'code': 10111, 'error': 'The code is already existed'})
+
+    cache.set(cache_key, code, 60)
+    # 发送随机码 -> 短信
+    send_sms(telephone, code)
+    return JsonResponse({'code': 200})
+
+def send_sms(telephone, code):
+
+    config = {
+        "accountSid": "2c94811c87fb7ec601882d4a7aa00f2e",
+        "accountToken": "c96c2ecf30284a64b9a9a11f9f4bf797",
+        "appId": "2c94811c87fb7ec601882d4a7be20f35",
+        "templateId": "1"
+    }
+    yun = YunTongXin(**config)
+    res = yun.run(telephone, code)
+    return res
+
+
 
 # 退出登录
 @csrf_exempt

@@ -2,9 +2,10 @@ import json
 import time
 
 from django.http import JsonResponse
+from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import csrf_exempt
 
-from user.models import Post, User
+from user.models import Post, User, Comment, FlavorPost,ExceptionPost
 from django.shortcuts import render
 from django.views import View
 from django.utils.decorators import method_decorator
@@ -65,6 +66,7 @@ class postViews(View):
         posts_list = []
         for post in posts:
             d={}
+            d['id'] = post.id
             d['title'] = post.title
             d['content'] = post.content
             d['like_count'] = post.like_count
@@ -88,6 +90,7 @@ class postViews(View):
         posts_list = []
         for post in posts:
             d = {}
+            d['id'] = post.id
             d['title'] = post.title
             d['content'] = post.content
             d['like_count'] = post.like_count
@@ -109,6 +112,7 @@ class postViews(View):
         posts_list = []
         for post in posts:
             d = {}
+            d['id'] = post.id
             d['title'] = post.title
             d['content'] = post.content
             d['like_count'] = post.like_count
@@ -129,6 +133,7 @@ class postViews(View):
         posts_list = []
         for post in posts:
             d = {}
+            d['id'] = post.id
             d['title'] = post.title
             d['content'] = post.content
             d['like_count'] = post.like_count
@@ -150,6 +155,7 @@ class postViews(View):
         posts_list = []
         for post in posts:
             d = {}
+            d['id'] = post.id
             d['title'] = post.title
             d['content'] = post.content
             d['like_count'] = post.like_count
@@ -167,6 +173,7 @@ class postViews(View):
         posts_list = []
         for post in posts:
             d = {}
+            d['id'] = post.id
             d['title'] = post.title
             d['content'] = post.content
             d['like_count'] = post.like_count
@@ -184,6 +191,7 @@ class postViews(View):
         posts_list = []
         for post in posts:
             d = {}
+            d['id'] = post.id
             d['title'] = post.title
             d['content'] = post.content
             d['like_count'] = post.like_count
@@ -201,6 +209,7 @@ class postViews(View):
         posts_list = []
         for post in posts:
             d = {}
+            d['id'] = post.id
             d['title'] = post.title
             d['content'] = post.content
             d['like_count'] = post.like_count
@@ -262,6 +271,11 @@ class postViews(View):
             post = Post.objects.get(title=title, user=authorName)
         except Exception as e:
             return JsonResponse({'code': 10205, 'error': '帖子不存在'})
+        #浏览者经验值加1
+        user.exp+=1
+        user.save()
+        #记录在FlavorPost中
+        FlavorPost.objects.create(user=user,post_id=post.id,title=post.title,timestamp=time.time())
         #作者经验值加3
         author=User.objects.get(username=authorName)
         author.exp+=3
@@ -281,8 +295,58 @@ class postViews(View):
             return JsonResponse({'code': 10205, 'error': '帖子不存在'})
         post.like_count -= 1
         post.save()
+        FlavorPost.objects.filter(user=user,post_id=post.id).delete()
         return JsonResponse({'code': 200})
+    #获取指定id的帖子
+    def get_post_by_id(self,request,id):
+        try:
+            post=Post.objects.get(id=id)
+        except Exception as e:
+            return JsonResponse({'code':10205,'error':'帖子不存在'})
+        res = {'code': 200, 'data': {}}
+        d = {}
+        d['id'] = post.id
+        d['title'] = post.title
+        d['content'] = post.content
+        d['like_count'] = post.like_count
+        d['comment_count'] = post.comment_count
+        d['update_time'] = post.update_time
+        res['data']['post'] = d
+        #浏览者经验值加1
+        visitor_name=get_username_by_request(request)
+        if visitor_name!=None:
+            visitor=User.objects.get(username=visitor_name)
+            visitor.exp+=1
+            visitor.save()
+            #记录在FlavorPost表中
+            FlavorPost.objects.create(user=visitor,post_id=id,flavor_title=post.title,timestamp=time.time())
+        #作者经验值加3
+        author=User.objects.get(username=post.user)
+        author.exp+=3
+        author.save()
+        #记录在FlavorPost表中
 
+        return JsonResponse(res)
+    #举报帖子
+    @method_decorator(check_token)
+    def report(self,request,authorName):
+        user = request.myuser
+        json_str = request.body.decode()
+        json_obj = json.loads(json_str)
+        id = json_obj['id']
+        reson=json_obj['reson']
+        try:
+            post = Post.objects.get(id=id, user=authorName)
+        except Exception as e:
+            return JsonResponse({'code': 10205, 'error': '帖子不存在'})
+        post.report_count += 1
+        post.save()
+        #举报者经验值加1
+        user.exp+=1
+        user.save()
+        #记录在ExceptionPost表中
+        ExceptionPost.objects.create(post_id=id,author=authorName,exception_reason=reson)
+        return JsonResponse({'code': 200})
 
 
     pass
