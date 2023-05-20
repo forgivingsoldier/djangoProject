@@ -33,7 +33,7 @@ def create_comment_for_post(request, post_id):
 
         return JsonResponse(get_comment_data(comment))
     else:
-        return JsonResponse({"error": "Invalid HTTP method"}, status=400)
+        return JsonResponse({'code': 10200, 'error': '请求方式错误'})
 
 @check_token
 def create_comment_for_comment(request, comment_id):
@@ -59,7 +59,7 @@ def create_comment_for_comment(request, comment_id):
 
         return JsonResponse('code:200')
     else:
-        return JsonResponse({"error": "Invalid HTTP method"}, status=400)
+        return JsonResponse({'code': 10200, 'error': '请求方式错误'})
 def get_comment_data(comment):
     replies = [get_comment_data(reply) for reply in comment.replies.all()]
     return {

@@ -146,10 +146,10 @@ def change_password_by_phone(request,username):
 
         old_code = cache.get('sms_%s' % (telephone))
         if not old_code:
-            result = {'code': '10110', 'error': 'The code is wrong'}
+            result = {'code': '10203', 'error': '验证码错误'}
             return JsonResponse(result)
         if int(sms_num) != old_code:
-            result = {'code': '10111', 'error': 'The code is wrong'}
+            result = {'code': '10203', 'error': '验证码错误'}
             return JsonResponse(result)
 
         p_m = hashlib.md5();
@@ -166,7 +166,7 @@ def change_password_by_phone(request,username):
 
 def sms_view(request):
     if request.method != 'POST':
-        result = {'code':10108, 'error':'Please use POST'}
+        result = {'code':10300, 'error':'请求方式错误'}
         return JsonResponse(result)
     json_str = request.body
     json_obj = json.loads(json_str)
@@ -179,7 +179,7 @@ def sms_view(request):
     # 检查是否已经有发过的且未过期的验证码
     old_code = cache.get(cache_key)
     if old_code:
-        return JsonResponse({'code': 10111, 'error': 'The code is already existed'})
+        return JsonResponse({'code': 10204, 'error': '验证码失效'})
 
     cache.set(cache_key, code, 60)
     # 发送随机码 -> 短信
@@ -218,7 +218,7 @@ def delete_account(request,username):
     if request.method == 'DELETE':
         user = request.myuser
         if user.username != username:
-            result = {'code': 10208, 'error': '无权限'}
+            result = {'code': 10205, 'error': '无权限的操作'}
             return JsonResponse(result)
         user.delete()
         return JsonResponse({'code': 200})
@@ -234,7 +234,7 @@ def check_level(request,username):
     if request.method == 'GET':
         user = request.myuser
         if user.username != username:
-            result = {'code': 10208, 'error': '无权限'}
+            result = {'code': 10205, 'error': '无权限'}
             return JsonResponse(result)
         if user.experience>=5:
             user.level+=1

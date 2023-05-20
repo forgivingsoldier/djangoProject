@@ -32,14 +32,14 @@ def post(request, authorName):
 def delete(request, authorName):
     author = request.myuser
     if author.username != authorName:
-        return JsonResponse({'code': 10206, 'error': '你没有权限删除别人的帖子,你的行为将被记录'})
+        return JsonResponse({'code': 10205, 'error': '你没有权限删除别人的帖子,你的行为将被记录'})
     json_str = request.body.decode()
     json_obj = json.loads(json_str)
     title = json_obj['title']
     try:
         post = Post.objects.get(title=title, user=authorName)
     except Exception as e:
-        return JsonResponse({'code': 10205, 'error': '帖子不存在'})
+        return JsonResponse({'code': 10207, 'error': '帖子不存在'})
     post.delete()
     return JsonResponse({'code': 200})
 
@@ -236,7 +236,7 @@ def get_all_posts_by_time(request):
 def put(request, authorName):
     user = request.myuser
     if user.username != authorName:
-        return JsonResponse({'code': 10206, 'error': '用户不是作者'})
+        return JsonResponse({'code': 10205, 'error': '无权限'})
     json_str = request.body.decode()
     json_obj = json.loads(json_str)
     title = json_obj['title']
@@ -244,7 +244,7 @@ def put(request, authorName):
     try:
         post = Post.objects.get(title=title, user=authorName)
     except Exception as e:
-        return JsonResponse({'code': 10205, 'error': '帖子不存在'})
+        return JsonResponse({'code': 10207, 'error': '帖子不存在'})
     post.content = content
     post.update_time = time.time()
     post.save()
@@ -284,7 +284,7 @@ def like(request, authorName):
     try:
         post = Post.objects.get(title=title, user=authorName)
     except Exception as e:
-        return JsonResponse({'code': 10205, 'error': '帖子不存在'})
+        return JsonResponse({'code': 10207, 'error': '帖子不存在'})
     # 浏览者经验值加1
     user.exp += 1
     user.save()
@@ -308,7 +308,7 @@ def unlike(request, authorName):
     try:
         post = Post.objects.get(title=title, user=authorName)
     except Exception as e:
-        return JsonResponse({'code': 10205, 'error': '帖子不存在'})
+        return JsonResponse({'code': 10207, 'error': '帖子不存在'})
     post.like_count -= 1
     post.save()
     FlavorPost.objects.filter(user=user, post_id=post.id).delete()
@@ -320,7 +320,7 @@ def get_post_by_id(request, id):
     try:
         post = Post.objects.get(id=id)
     except Exception as e:
-        return JsonResponse({'code': 10205, 'error': '帖子不存在'})
+        return JsonResponse({'code': 10207, 'error': '帖子不存在'})
     res = {'code': 200, 'data': {}}
     d = {}
     d['id'] = post.id
@@ -358,7 +358,7 @@ def report(self, request, authorName):
     try:
         post = Post.objects.get(id=id, user=authorName)
     except Exception as e:
-        return JsonResponse({'code': 10205, 'error': '帖子不存在'})
+        return JsonResponse({'code': 10207, 'error': '帖子不存在'})
     post.report_count += 1
     post.save()
     # 举报者经验值加1
