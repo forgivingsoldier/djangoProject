@@ -27,7 +27,7 @@ def login(request):
         password = data['password']
 
         try:
-            user = User.objects.get(username=username);
+            user = User.objects.get(username=username)
         except Exception as e:
             result = {'code': 10201, 'error': '用户不存在'}
             return JsonResponse(result)
