@@ -50,7 +50,7 @@ def register(request):
         return JsonResponse(result)
     p_m = hashlib.md5()
     p_m.update(password_1.encode())
-    User.objects.create(username=username,nickname=username,password=p_m.hexdigest(),email=email,telephone=telephone)
+    User.objects.create(username=username,nickname=username,password=p_m.hexdigest(),email=email,telephone=telephone,avatar='default.png',)
 
       # 参数的基本检查：密码不能超过多少位，用户名是否可用
       # 异常返回：

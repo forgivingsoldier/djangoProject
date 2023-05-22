@@ -1,5 +1,7 @@
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
+from django.urls import reverse
+
 from user.models import Post, FlavorPost, FlavorResource,Resource
 from tools.recommender import ContentBasedRecommender
 import pandas as pd
@@ -27,8 +29,16 @@ def recommend_post_for_user(request, userName):
 
     # 获取推荐的内容id
     recommended_post_ids = recommender.recommend_items(post_ids, 5)
+    recommended_posts = [
+        {
+            "id": post_id,
+            "title": posts.get(id=post_id).title,
+            "url": reverse('get_post_by_id', args=[post_id]),
+        }
+        for post_id in recommended_post_ids
+    ]
 
-    return JsonResponse({'recommended_posts': recommended_post_ids})
+    return JsonResponse({'recommended_posts': recommended_posts})
 
 def recommend_resource_for_user(request, userName):
     try:
