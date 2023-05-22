@@ -9,6 +9,7 @@ urlpatterns =[
     path('<str:authorName>/get_all_by_time', views.get_all_posts_by_time),
     path('<str:authorName>/get_post_by_like', views.get_posts_by_like),
     path('<str:authorName>/get_post_by_keyword', views.post),
+    path('<int:id>/get_post_by_id', views.get_post_by_id,name='get_post_by_id'),
     path('<str:authorName>/', views.post),
-    path('<str:authorName>/', views.post),
+
 ]

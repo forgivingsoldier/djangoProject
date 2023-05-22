@@ -1,11 +1,15 @@
 import json
 import time
 
+import pandas as pd
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
+from django.urls import reverse
 from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import csrf_exempt
 
-from user.models import Post, User, Comment_for_post, FlavorPost, ExceptionPost
+from tools.recommender import ContentBasedRecommender
+from user.models import Post, User, Comment_for_post, FlavorPost, ExceptionPost, LikeNotice
 from django.shortcuts import render
 from django.views import View
 from django.utils.decorators import method_decorator
@@ -68,7 +72,7 @@ def get_all_posts(request, authorName):
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-
+        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
         posts_list.append(d)
 
     res['data']['nickname'] = author.nickname
@@ -117,6 +121,7 @@ def get_posts_by_like(request, authorName):
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
+        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
 
         posts_list.append(d)
 
@@ -140,6 +145,7 @@ def get_posts_by_keyword(request, authorName):
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
+        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
 
         posts_list.append(d)
 
@@ -164,7 +170,7 @@ def get_posts_by_comment(request, authorName):
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-
+        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
         posts_list.append(d)
 
     res['data']['posts'] = posts_list
@@ -184,7 +190,7 @@ def get_all_posts_by_like(request):
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-
+        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
         posts_list.append(d)
 
     res['data']['posts'] = posts_list
@@ -204,7 +210,7 @@ def get_all_posts_by_comment(request):
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-
+        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
         posts_list.append(d)
 
     res['data']['posts'] = posts_list
@@ -224,7 +230,7 @@ def get_all_posts_by_time(request):
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-
+        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
         posts_list.append(d)
 
     res['data']['posts'] = posts_list
@@ -295,6 +301,14 @@ def like(request, authorName):
     author.exp += 3
     post.like_count += 1
     post.save()
+    # 创建 LikeNotice 记录
+    LikeNotice.objects.create(
+        user=author,
+        which_like=1,  # 根据你的定义，1 代表帖子
+        post=post,
+        post_title=post.title,
+        timestamp=time.time()
+    )
     return JsonResponse({'code': 200})
 
 
@@ -342,7 +356,6 @@ def get_post_by_id(request, id):
     author = User.objects.get(username=post.user)
     author.exp += 3
     author.save()
-    # 记录在FlavorPost表中
 
     return JsonResponse(res)
 
@@ -367,3 +380,59 @@ def report(self, request, authorName):
     # 记录在ExceptionPost表中
     ExceptionPost.objects.create(post_id=id, author=authorName, exception_reason=reson)
     return JsonResponse({'code': 200})
+
+
+def recommend_post_for_user(request, userName):
+    try:
+        flavor_logs = FlavorPost.objects.filter(user=userName)
+    except ObjectDoesNotExist:
+        #进行随机推荐
+        posts = Post.objects.all()
+        posts_df = pd.DataFrame(posts.values('id', 'title'))
+        recommender = ContentBasedRecommender(posts_df)
+        recommended_post_ids = recommender.recommend_items([], 5)
+        return JsonResponse({'recommended_posts': recommended_post_ids})
+
+    # 获取用户浏览的所有内容的id
+    post_ids = [log.post.id for log in flavor_logs]
+
+    # 获取所有的内容和标题
+    posts = Post.objects.all()
+    posts_df = pd.DataFrame(posts.values('id', 'title'))
+
+    # 创建推荐器
+    recommender = ContentBasedRecommender(posts_df)
+
+    # 获取推荐的内容id
+    recommended_post_ids = recommender.recommend_items(post_ids, 5)
+    recommended_posts = [
+        {
+            "id": post_id,
+            "title": posts.get(id=post_id).title,
+            "url": reverse('get_post_by_id', args=[post_id]),
+        }
+        for post_id in recommended_post_ids
+    ]
+
+    return JsonResponse({'recommended_posts': recommended_posts})
+#获取关注者所有的帖子
+@csrf_exempt
+@check_token
+def get_follow_post(request,username):
+    if request.method == 'GET':
+        user = request.myuser
+        if user.username != username:
+            result = {'code': 10205, 'error': '无权限'}
+            return JsonResponse(result)
+        follow_users = user.follow.all()
+        post_list = []
+        for follow_user in follow_users:
+            posts = Post.objects.filter(user=follow_user)
+            for post in posts:
+                post_list.append(post)
+        post_list.sort(key=lambda x: x.update_time, reverse=True)
+        post_list = [{'id': post.id, 'title': post.title, 'url': reverse('get_post_by_id', args=[post.id])} for post in post_list]
+        return JsonResponse({'code': 200, 'data': {'post_list': post_list}})
+    else:
+        result = {'code': 10200, 'error': '请求方式错误'}
+        return JsonResponse(result)
