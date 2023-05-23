@@ -1,3 +1,5 @@
+import datetime
+
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse, FileResponse
@@ -5,12 +7,12 @@ from django.shortcuts import get_object_or_404
 from django.views import View
 
 from tools.user_dec import check_token
-from user.models import Resource
+from user.models import Resource, ExceptionResource, FlavorResource
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 import json
 import os
-
+from datetime import datetime
 # class sourceViews(View):
 @method_decorator(check_token)
 def post(request):
@@ -135,6 +137,7 @@ def download(request):
             response = FileResponse(open(file, 'rb'))
             # provide the file name for download
             response['Content-Disposition'] = 'attachment; filename="%s"' % resource.file.name
+            FlavorResource.objects.create(user=request.user,resource_id=resource.id, flavor_title=name, timestamp=datetime.now())
             return response
         except Resource.DoesNotExist:
             return JsonResponse({'code': 404, 'error': 'File not found'})
@@ -145,6 +148,7 @@ def report(request):
     json_str = request.body.decode()
     json_obj = json.loads(json_str)
     name = json_obj.get('name')
+    reason = json_obj['reason']
     if not name:
         return JsonResponse({'code': 400, 'error': 'Missing required fields'})
 
@@ -154,5 +158,5 @@ def report(request):
 
     resource.report_count += 1
     resource.save()
-
+    ExceptionResource.objects.create(post_id=id, exception_reason=reason)
     return JsonResponse({'code': 200, 'message': 'Report submitted successfully'})
