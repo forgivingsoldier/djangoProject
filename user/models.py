@@ -30,7 +30,7 @@ class User(models.Model):
 
 
 class Resource(models.Model):
-
+    # writer = models.CharField('上传者', max_length=255,default='其他')
     name = models.CharField('资源名称', max_length=255)
     author = models.CharField('作者', max_length=255)
     description = models.TextField('资源描述')
@@ -43,7 +43,8 @@ class Resource(models.Model):
     report_count = models.IntegerField('举报次数', default=0)
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
     upload_time = models.DateTimeField('上传时间', default=timezone.now)
-
+    # file_size = models.BigIntegerField('文件大小', default=0)
+    file_size = models.IntegerField(null=True)
     class Meta:
         db_table = 'resource'
         verbose_name = 'resource'
@@ -101,6 +102,13 @@ class ExceptionPost(models.Model):
     exception_reason = models.TextField("异常原因",default='无')
     class Meta:
         db_table = 'exception_post'
+
+class ExceptionComment(models.Model):
+    author =models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
+    comment_id = models.ForeignKey(Comment_for_post, on_delete=models.CASCADE, blank=True, null=True,db_column='comment_id')
+    exception_reason = models.TextField("异常原因",default='无')
+    class Meta:
+        db_table = 'exception_comment'
 class FlavorPost(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
     post_id = models.ForeignKey(Post, on_delete=models.CASCADE, blank=True, null=True,db_column='post_id')
@@ -137,7 +145,7 @@ class UserWarningNotice(models.Model):
 
 #点赞通知
 class LikeNotice(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='username',related_name='like_received')
     is_read = models.BooleanField('是否已读', default=False)
     which_like=models.IntegerField('点赞类型', default=0)# 1,2,3分别代表帖子，资源，评论
     post=models.ForeignKey(Post, on_delete=models.CASCADE, blank=True, null=True,db_column='post_id')
@@ -146,7 +154,7 @@ class LikeNotice(models.Model):
     resource_title=models.CharField('资源标题', max_length=255,default='无')
     comment=models.ForeignKey(Comment_for_post, on_delete=models.CASCADE, blank=True, null=True,db_column='comment_id')
     timestamp = models.DateTimeField('时间戳', auto_now_add=True)
-
+    doer=models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True,db_column='doer',related_name='likes_given')
     class Meta:
         db_table = 'like_notice'
 

@@ -20,12 +20,13 @@ from django.conf.urls.static import static
 from djangoProject import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+   # path('admin/', admin.site.urls),
     re_path('user/', include('user.urls')),
     re_path('post/', include('post.urls')),
     re_path('source/', include('source.urls')),
     re_path('visitor/', include('visitor.urls')),
     re_path('comment/', include('comment.urls')),
+    re_path('admin/', include('admin.urls')),
 
 ]
 

@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 
 from tools.recommender import ContentBasedRecommender
 from user.models import Post, User, Comment_for_post, FlavorPost, ExceptionPost, LikeNotice
@@ -27,6 +28,10 @@ def post(request, authorName):
     title = json_obj['title']
     content = json_obj['content']
     require_level = json_obj['level']
+    #把require_level转换成int类型
+    require_level=int(require_level)
+    if author.level < require_level:
+        return JsonResponse({'code': 10204, 'error': '你的等级小于你要求的等级'})
     Post.objects.create(title=title, content=content, user=author, require_level=require_level, like_count=0,
                         comment_count=0, update_time=time.time(), )
     return JsonResponse({'code': 200})
@@ -72,7 +77,7 @@ def get_all_posts(request, authorName):
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
+        d['url']=reverse('get_post_by_id',kwargs={'id':post.id})
         posts_list.append(d)
 
     res['data']['nickname'] = author.nickname
@@ -93,11 +98,13 @@ def get_posts_by_time(request, authorName):
         d = {}
         d['id'] = post.id
         d['title'] = post.title
+        d['author'] = post.user.username
+        d['avatar'] = reverse('get_avatar', kwargs={'username': post.user.username})
         d['content'] = post.content
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
+        d['url']=reverse('get_post_by_id',kwargs={'id':post.id})
         posts_list.append(d)
 
     res['data']['posts'] = posts_list
@@ -117,11 +124,13 @@ def get_posts_by_like(request, authorName):
         d = {}
         d['id'] = post.id
         d['title'] = post.title
+        d['author'] = post.user.username
+        d['avatar'] = reverse('get_avatar', kwargs={'username': post.user.username})
         d['content'] = post.content
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
+        d['url']=reverse('get_post_by_id',kwargs={'id':post.id})
 
         posts_list.append(d)
 
@@ -141,11 +150,13 @@ def get_posts_by_keyword(request, authorName):
         d = {}
         d['id'] = post.id
         d['title'] = post.title
+        d['author'] = post.user.username
+        d['avatar'] = reverse('get_avatar', kwargs={'username': post.user.username})
         d['content'] = post.content
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
+        d['url']=reverse('get_post_by_id',kwargs={'id':post.id})
 
         posts_list.append(d)
 
@@ -166,11 +177,13 @@ def get_posts_by_comment(request, authorName):
         d = {}
         d['id'] = post.id
         d['title'] = post.title
+        d['author'] = post.user.username
+        d['avatar'] = reverse('get_avatar', kwargs={'username': post.user.username})
         d['content'] = post.content
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
+        d['url']=reverse('get_post_by_id',kwargs={'id':post.id})
         posts_list.append(d)
 
     res['data']['posts'] = posts_list
@@ -186,11 +199,13 @@ def get_all_posts_by_like(request):
         d = {}
         d['id'] = post.id
         d['title'] = post.title
+        d['author'] = post.user.username
+        d['avatar'] = reverse('get_avatar', kwargs={'username': post.user.username})
         d['content'] = post.content
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
+        d['url']=reverse('get_post_by_id',kwargs={'id':post.id})
         posts_list.append(d)
 
     res['data']['posts'] = posts_list
@@ -207,10 +222,12 @@ def get_all_posts_by_comment(request):
         d['id'] = post.id
         d['title'] = post.title
         d['content'] = post.content
+        d['author'] = post.user.username
+        d['avatar'] = reverse('get_avatar', kwargs={'username': post.user.username})
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
+        d['url']=reverse('get_post_by_id',kwargs={'id':post.id})
         posts_list.append(d)
 
     res['data']['posts'] = posts_list
@@ -227,10 +244,12 @@ def get_all_posts_by_time(request):
         d['id'] = post.id
         d['title'] = post.title
         d['content'] = post.content
+        d['author'] = post.user.username
+        d['avatar'] =reverse('get_avatar',kwargs={'username':post.user.username})
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
+        d['url']=reverse('get_post_by_id',kwargs={'id':post.id})
         posts_list.append(d)
 
     res['data']['posts'] = posts_list
@@ -282,23 +301,24 @@ def is_require_level(request, authorName):
 
 # 给帖子点赞
 @check_token
-def like(request, authorName):
+def like(request):
     user = request.myuser
     json_str = request.body.decode()
     json_obj = json.loads(json_str)
     title = json_obj['title']
     try:
-        post = Post.objects.get(title=title, user=authorName)
+        post = Post.objects.get(title=title)
     except Exception as e:
         return JsonResponse({'code': 10207, 'error': '帖子不存在'})
     # 浏览者经验值加1
-    user.exp += 1
+    user.experience += 1
     user.save()
     # 记录在FlavorPost中
-    FlavorPost.objects.create(user=user, post_id=post.id, title=post.title, timestamp=time.time())
+    FlavorPost.objects.create(user=user, post_id=post, flavor_title=post.title, timestamp=time.time())
     # 作者经验值加3
-    author = User.objects.get(username=authorName)
-    author.exp += 3
+
+    author = post.user
+    author.experience += 3
     post.like_count += 1
     post.save()
     # 创建 LikeNotice 记录
@@ -307,20 +327,21 @@ def like(request, authorName):
         which_like=1,  # 根据你的定义，1 代表帖子
         post=post,
         post_title=post.title,
-        timestamp=time.time()
+        timestamp=time.time(),
+        doer=user,
     )
     return JsonResponse({'code': 200})
 
 
 # 给帖子取消点赞
 @check_token
-def unlike(request, authorName):
+def unlike(request):
     user = request.myuser
     json_str = request.body.decode()
     json_obj = json.loads(json_str)
     title = json_obj['title']
     try:
-        post = Post.objects.get(title=title, user=authorName)
+        post = Post.objects.get(title=title)
     except Exception as e:
         return JsonResponse({'code': 10207, 'error': '帖子不存在'})
     post.like_count -= 1
@@ -330,6 +351,7 @@ def unlike(request, authorName):
 
 
 # 获取指定id的帖子
+@require_http_methods(['GET'])
 def get_post_by_id(request, id):
     try:
         post = Post.objects.get(id=id)
@@ -338,6 +360,8 @@ def get_post_by_id(request, id):
     res = {'code': 200, 'data': {}}
     d = {}
     d['id'] = post.id
+    d['author'] = post.user.username
+    d['avatar'] =reverse('get_avatar',kwargs={'username':post.user.username})
     d['title'] = post.title
     d['content'] = post.content
     d['like_count'] = post.like_count
@@ -348,13 +372,13 @@ def get_post_by_id(request, id):
     visitor_name = get_username_by_request(request)
     if visitor_name != None:
         visitor = User.objects.get(username=visitor_name)
-        visitor.exp += 1
+        visitor.experience += 1
         visitor.save()
         # 记录在FlavorPost表中
-        FlavorPost.objects.create(user=visitor, post_id=id, flavor_title=post.title, timestamp=time.time())
+        FlavorPost.objects.create(user=visitor, post_id=post, flavor_title=post.title, timestamp=time.time())
     # 作者经验值加3
-    author = User.objects.get(username=post.user)
-    author.exp += 3
+    author = User.objects.get(username=post.user.username)
+    author.experience += 3
     author.save()
 
     return JsonResponse(res)
@@ -362,23 +386,24 @@ def get_post_by_id(request, id):
 
 # 举报帖子
 @check_token
-def report(self, request, authorName):
+def report(request):
     user = request.myuser
     json_str = request.body.decode()
     json_obj = json.loads(json_str)
     id = json_obj['id']
-    reson = json_obj['reson']
+    reason = json_obj['reason']
     try:
-        post = Post.objects.get(id=id, user=authorName)
+        post = Post.objects.get(id=id)
     except Exception as e:
         return JsonResponse({'code': 10207, 'error': '帖子不存在'})
+    authorName= post.user.username
     post.report_count += 1
     post.save()
     # 举报者经验值加1
-    user.exp += 1
+    user.experience += 1
     user.save()
     # 记录在ExceptionPost表中
-    ExceptionPost.objects.create(post_id=id, author=authorName, exception_reason=reson)
+    ExceptionPost.objects.create(post_id=post, author=User.objects.get(username=authorName), exception_reason=reason)
     return JsonResponse({'code': 200})
 
 
@@ -386,19 +411,25 @@ def recommend_post_for_user(request, userName):
     try:
         flavor_logs = FlavorPost.objects.filter(user=userName)
     except ObjectDoesNotExist:
-        #进行随机推荐
+        # 进行随机推荐
         posts = Post.objects.all()
         posts_df = pd.DataFrame(posts.values('id', 'title'))
-        recommender = ContentBasedRecommender(posts_df)
+        recommender = ContentBasedRecommender(posts_df.rename(columns={'title': 'flavor_title'}))
         recommended_post_ids = recommender.recommend_items([], 5)
         return JsonResponse({'recommended_posts': recommended_post_ids})
 
     # 获取用户浏览的所有内容的id
-    post_ids = [log.post.id for log in flavor_logs]
+    post_ids = [log.post_id.id for log in flavor_logs]
 
     # 获取所有的内容和标题
     posts = Post.objects.all()
     posts_df = pd.DataFrame(posts.values('id', 'title'))
+
+    # 获取所有的flavor_title并联接到posts_df
+    flavor_posts = FlavorPost.objects.all()
+    flavor_posts_df = pd.DataFrame(flavor_posts.values('post_id', 'flavor_title'))
+    posts_df = pd.merge(posts_df, flavor_posts_df, left_on='id', right_on='post_id', how='left')
+    posts_df = posts_df.drop('post_id', axis=1)
 
     # 创建推荐器
     recommender = ContentBasedRecommender(posts_df)
@@ -409,19 +440,21 @@ def recommend_post_for_user(request, userName):
         {
             "id": post_id,
             "title": posts.get(id=post_id).title,
-            "url": reverse('get_post_by_id', args=[post_id]),
+            "url": reverse('get_post_by_id',kwargs={'id':post.id})
         }
         for post_id in recommended_post_ids
     ]
 
     return JsonResponse({'recommended_posts': recommended_posts})
+
+
 #获取关注者所有的帖子
-@csrf_exempt
+
 @check_token
-def get_follow_post(request,username):
+def get_follow_post(request,userName):
     if request.method == 'GET':
         user = request.myuser
-        if user.username != username:
+        if user.username != userName:
             result = {'code': 10205, 'error': '无权限'}
             return JsonResponse(result)
         follow_users = user.follow.all()

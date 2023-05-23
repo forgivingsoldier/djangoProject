@@ -1,6 +1,7 @@
+import base64
 import hashlib
 import time
-from random import random
+import random
 
 from django.core.cache import cache
 from django.shortcuts import render
@@ -19,7 +20,7 @@ from tools.user_dec import check_token
 from user.models import User, Admin_request, Post, LikeNotice, CommentNotice
 from django.conf import settings
 #登录
-@csrf_exempt
+
 def login(request):
     if request.method == 'POST':
         json_str = request.body.decode()
@@ -29,7 +30,7 @@ def login(request):
         password = data['password']
 
         try:
-            user = User.objects.get(username=username);
+            user = User.objects.get(username=username)
         except Exception as e:
             result = {'code': 10201, 'error': '用户不存在'}
             return JsonResponse(result)
@@ -68,7 +69,7 @@ def info(request, username):
         follow_num = user.follow.all().count()
         result = {'code': 200, 'username': username, 'data': {'nickname': user.nickname, 'email': user.email,
                                                                'role': user.role, 'experience': user.experience,
-                                                               'level': user.level,'follow_number':follow_num,'avatar': str(user.avatar), 'signature': user.signature}}
+                                                               'level': user.level,'follow_number':follow_num, 'signature': user.signature}}
         return JsonResponse(result)
 
     else:
@@ -76,7 +77,6 @@ def info(request, username):
         return JsonResponse(result)
 
 #修改用户信息
-@csrf_exempt
 @check_token
 def change_info(request,username):
     if request.method == 'PUT':
@@ -97,8 +97,24 @@ def change_info(request,username):
         result = {'code': 10200, 'error': '请求方式错误'}
         return JsonResponse(result)
 
+def get_avatar(request, username):
+    try:
+        user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        result = {'code': 10201, 'error': '用户不存在'}
+        return JsonResponse(result)
+
+    if request.method == 'GET':
+        try:
+            return JsonResponse({'code':200,'avatar': request.build_absolute_uri(user.avatar.url)})
+        except Exception as e:
+            result = {'code': 10212, 'error': '图片读取错误'}
+        return JsonResponse(result)
+    else:
+        result = {'code': 10200, 'error': '请求方式错误'}
+        return JsonResponse(result)
+
 #修改用户头像
-@csrf_exempt
 @check_token
 def change_avatar(request,username):
     if request.method == 'POST':
@@ -111,7 +127,6 @@ def change_avatar(request,username):
         result = {'code': 10200, 'error': '请求方式错误'}
         return JsonResponse(result)
 #修改密码
-@csrf_exempt
 @check_token
 def change_password(request,username):
     if request.method == 'PUT':
@@ -145,7 +160,7 @@ def change_password_by_phone(request,username):
         data = json.loads(json_str)
         telephone = data['telephone']
         sms_num = data['sms_num']
-        user = request.myuser
+        user = User.objects.get(username=username)
 
         old_code = cache.get('sms_%s' % (telephone))
         if not old_code:
@@ -204,7 +219,7 @@ def send_sms(telephone, code):
 
 
 # 退出登录
-@csrf_exempt
+
 @check_token
 def logout(request,username):
     if request.method == 'POST':
@@ -215,7 +230,7 @@ def logout(request,username):
         result = {'code': 10200, 'error': '请求方式错误'}
         return JsonResponse(result)
 # 注销账号
-@csrf_exempt
+
 @check_token
 def delete_account(request,username):
     if request.method == 'DELETE':
@@ -231,7 +246,7 @@ def delete_account(request,username):
         return JsonResponse(result)
 
 #根据经验值判断用户是否升级
-@csrf_exempt
+
 @check_token
 def check_level(request,username):
     if request.method == 'GET':
@@ -239,11 +254,12 @@ def check_level(request,username):
         if user.username != username:
             result = {'code': 10205, 'error': '无权限'}
             return JsonResponse(result)
-        if user.experience>=5:
-            user.level+=1
-            user.experience-=5
-            user.save()
-
+        #循环判断用户是否升级
+        while True:
+            if user.experience < 20:
+                break
+            user.level += 1
+            user.experience -= 20
         return JsonResponse({'code': 200,'data':{'level':user.level,'experience':user.experience}})
     else:
         result = {'code': 10200, 'error': '请求方式错误'}
@@ -252,15 +268,15 @@ def check_level(request,username):
 #获取在线用户数
 def get_online_user_num(request):
     if request.method == 'GET':
-        online_users = cache.get('online_users', [])
-        # online_user_num = len(online_users)
-        result = {'code': 200, 'data': {'online_user_num': online_users}}
+        online_user_num = cache.get('online_users', 0)
+        result = {'code': 200, 'data': {'online_user_num': online_user_num}}  # directly return the number
         return JsonResponse(result)
     else:
         result = {'code': 10200, 'error': '请求方式错误'}
         return JsonResponse(result)
+
 #申请成为管理员
-@csrf_exempt
+
 @check_token
 def apply_admin(request,username):
     if request.method == 'POST':
@@ -276,7 +292,7 @@ def apply_admin(request,username):
         return JsonResponse(result)
 
 #关注
-@csrf_exempt
+
 @check_token
 def follow(request,username):
     if request.method == 'POST':
@@ -306,7 +322,7 @@ def follow(request,username):
 
 
 #取消关注
-@csrf_exempt
+
 @check_token
 def unfollow(request,username):
     if request.method == 'POST':
@@ -333,8 +349,8 @@ def unfollow(request,username):
     else:
         result = {'code': 10200, 'error': '请求方式错误'}
         return JsonResponse(result)
-
-def get_all_liked(request):
+@check_token
+def get_all_liked(request,username):
     user = request.myuser
     # 获取用户的所有点赞通知
     unread_likes = LikeNotice.objects.filter(user=user).order_by('-timestamp')
@@ -342,6 +358,8 @@ def get_all_liked(request):
     unread_likes_list = [{
         'id': like.id,
         'which_like': like.which_like,
+        'conducter': like.doer.username,
+        'conducter_avatar': reverse('get_avatar', kwargs={'username': like.doer.username}),
         'post_id': like.post.id if like.post else None,
         'post_title': like.post_title,
         'resource_id': like.resource.id if like.resource else None,
@@ -349,15 +367,15 @@ def get_all_liked(request):
         'comment_id': like.comment.id if like.comment else None,
         'timestamp': like.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
         'is_read': like.is_read,
-        'post_url':reverse('get_post_by_id',args=(like.post.id,)) if like.post else None,
+        'post_url':reverse('get_post_by_id',kwargs={'id':like.post.id}) if like.post else None,
        # 'resource_url':reverse('get_resource_by_id',args=(like.resource.id,)) if like.resource else None,
-        'comment_url':reverse('get_comment_by_id',args=(like.comment.id,)) if like.comment else None,
+        'comment_url':reverse('get_comment_by_id',kwargs={'comment_id':like.comment.id}) if like.comment else None,
     } for like in unread_likes]
     unread_likes.update(is_read=True)
     # 返回结果
     return JsonResponse({'code': 200, 'unread_likes': unread_likes_list})
-
-def get_all_commented(request):
+@check_token
+def get_all_commented(request,username):
     user = request.myuser
     # 获取用户的所有评论通知
     unread_comments = CommentNotice.objects.filter(user=user).order_by('-timestamp')
@@ -365,6 +383,8 @@ def get_all_commented(request):
     unread_comments_list = [{
         'id': comment.id,
         'which_comment': comment.which_comment,
+        'conducter': comment.doer.username,
+        'conducter_avatar': reverse('get_avatar', kwargs={'username': comment.doer.username}),
         'post_id': comment.post.id if comment.post else None,
         'post_title': comment.post_title,
         'resource_id': comment.resource.id if comment.resource else None,
@@ -372,10 +392,30 @@ def get_all_commented(request):
         'comment_id': comment.comment.id if comment.comment else None,
         'timestamp': comment.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
         'is_read': comment.is_read,
-        'post_url':reverse('get_post_by_id',args=(comment.post.id,)) if comment.post else None,
+        'post_url':reverse('get_post_by_id',kwargs={'id':comment.post.id})if comment.post else None,
         #'resource_url':reverse('get_resource_by_id',args=(comment.resource.id,)) if comment.resource else None,
-        'comment_url':reverse('get_comment_by_id',args=(comment.comment.id,)) if comment.comment else None,
+        'comment_url':reverse('get_comment_by_id',kwargs={'comment_id':comment.comment.id})if comment.comment else None,
     } for comment in unread_comments]
     unread_comments.update(is_read=True)
     # 返回结果
     return JsonResponse({'code': 200, 'unread_comments': unread_comments_list})
+
+#统计关注的人数
+@check_token
+def get_follow_num(request,username):
+    user = request.myuser
+    if user.username != username:
+        result = {'code': 10205, 'error': '无权限'}
+        return JsonResponse(result)
+    follow_num = user.follow.count()
+    return JsonResponse({'code': 200, 'follow_num': follow_num})
+
+#统计粉丝数
+@check_token
+def get_fans_num(request,username):
+    user = request.myuser
+    if user.username != username:
+        result = {'code': 10205, 'error': '无权限'}
+        return JsonResponse(result)
+    fans_num = User.objects.filter(follow__username=username).count()
+    return JsonResponse({'code': 200, 'fans_num': fans_num})
