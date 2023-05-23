@@ -295,7 +295,7 @@ def follow(request,username):
             result = {'code': 10209, 'error': '不能关注自己'}
             return JsonResponse(result)
         if user.follow.filter(username=follow_user_name).exists():
-            result = {'code': 10210, 'error': '已关注'}
+            result = {'code': 10210, 'error': '已关注该用户'}
             return JsonResponse(result)
         user.follow.add(follow_user)
         user.save()
@@ -319,13 +319,13 @@ def unfollow(request,username):
         follow_user_name = data['follow_user_name']
         follow_user = User.objects.filter(username=follow_user_name).first()
         if not follow_user:
-            result = {'code': 10206, 'error': '关注的用户不存在'}
+            result = {'code': 10208, 'error': '关注的用户不存在'}
             return JsonResponse(result)
         if user == follow_user:
-            result = {'code': 10207, 'error': '不能关注自己'}
+            result = {'code': 10209, 'error': '不能关注自己'}
             return JsonResponse(result)
         if not user.follow.filter(username=follow_user_name).exists():
-            result = {'code': 10209, 'error': '未关注'}
+            result = {'code': 10211, 'error': '未关注'}
             return JsonResponse(result)
         user.follow.remove(follow_user)
         user.save()
@@ -334,9 +334,9 @@ def unfollow(request,username):
         result = {'code': 10200, 'error': '请求方式错误'}
         return JsonResponse(result)
 
-def get_follow_likes(request):
+def get_all_liked(request):
     user = request.myuser
-    # 获取用户的所有未读点赞通知
+    # 获取用户的所有点赞通知
     unread_likes = LikeNotice.objects.filter(user=user).order_by('-timestamp')
     # 将结果转换为字典列表，以便能够将其序列化为JSON
     unread_likes_list = [{
@@ -357,9 +357,9 @@ def get_follow_likes(request):
     # 返回结果
     return JsonResponse({'code': 200, 'unread_likes': unread_likes_list})
 
-def get_follow_comments(request):
+def get_all_commented(request):
     user = request.myuser
-    # 获取用户的所有未读评论通知
+    # 获取用户的所有评论通知
     unread_comments = CommentNotice.objects.filter(user=user).order_by('-timestamp')
     # 将结果转换为字典列表，以便能够将其序列化为JSON
     unread_comments_list = [{

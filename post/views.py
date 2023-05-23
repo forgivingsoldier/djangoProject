@@ -97,7 +97,7 @@ def get_posts_by_time(request, authorName):
         d['like_count'] = post.like_count
         d['comment_count'] = post.comment_count
         d['update_time'] = post.update_time
-
+        d['url']=reverse('get_post_by_id',kwargs={'post_id':post.id})
         posts_list.append(d)
 
     res['data']['posts'] = posts_list

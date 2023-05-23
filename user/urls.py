@@ -18,8 +18,8 @@ urlpatterns = [
     path('<str:username>/admin_apply', views.apply_admin),
     path('<str:username>/follow', views.follow),
     path('<str:username>/unfollow', views.unfollow),
-    path('<str:username>/get_follow_likes', views.get_follow_likes),
-    path('<str:username>/get_follow_comments', views.get_follow_comments),
+    path('<str:username>/get_liked', views.get_all_liked),
+    path('<str:username>/get_commented', views.get_all_commented),
 
 
 ]

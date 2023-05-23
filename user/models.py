@@ -161,7 +161,6 @@ class CommentNotice(models.Model):
     resource_title=models.CharField('资源标题', max_length=255,default='无')
     comment=models.ForeignKey(Comment_for_post, on_delete=models.CASCADE, blank=True, null=True,db_column='comment_id')
     timestamp = models.DateTimeField('时间戳', auto_now_add=True)
-    comment=models.ForeignKey(Comment_for_post, on_delete=models.CASCADE, blank=True, null=True,db_column='comment_id')
 
     class Meta:
         db_table = 'comment_notice'
